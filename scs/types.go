@@ -65,11 +65,31 @@ type ObjectMeta struct {
 	XAmzMeta      map[string]string
 }
 
-// Content-Type: <object-mime-type>
-// Content-Length: <object-file-bytes>
-// ETag: "<文件的MD5值>"
-// Last-Modified: <最后修改时间>
-// X-RequestId: 00078d50-1404-0810-5947-782bcb10b128
-// X-Requester: Your UserId
-// x-amz-meta-foo1: <value1> #自定义meta：foo1
-// x-amz-meta-foo2: <value2> #自定义meta：foo2
+// ListObject type
+type ListObject struct {
+	Delimiter              string         `json:"Delimiter"`
+	Prefix                 string         `json:"Prefix"`
+	CommonPrefixes         []CommonPrefix `json:"CommonPrefixes"`
+	Marker                 string         `json:"Marker"`
+	ContentsQuantity       int64          `json:"ContentsQuantity"`
+	CommonPrefixesQuantity int64          `json:"CommonPrefixesQuantity"`
+	NextMarker             string         `json:"NextMarker"`
+	IsTruncated            bool           `json:"IsTruncated"`
+	Contents               []Object       `json:"Contents"`
+}
+
+// CommonPrefix type
+type CommonPrefix struct {
+	Prefix string `json:"Prefix"`
+}
+
+// Object type
+type Object struct {
+	SHA1         string `json:"SHA1"`
+	Name         string `json:"Name"`
+	LastModified string `json:"Last-Modified"`
+	Owner        string `json:"Owner"`
+	MD5          string `json:"MD5"`
+	ContentType  string `json:"ContentType"`
+	Size         int64  `json:"Size"`
+}

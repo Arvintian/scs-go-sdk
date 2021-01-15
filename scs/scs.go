@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/Arvintian/scs-go-sdk/pkg/client"
 )
@@ -87,8 +88,43 @@ func (s *SCS) GetBucketMeta(name string) (BucketMeta, error) {
 }
 
 //PutBucket 创建bucket
-func (s *SCS) PutBucket(name string) error {
-	return errors.New("no implement")
+func (s *SCS) PutBucket(name string, acl string) error {
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	var headers = make(http.Header)
+	if acl != ACLPrivate && acl != ACLPublicRead && acl != ACLPublicReadWrite && acl != ACLAuthenticatedRead {
+		return errors.New("acl error")
+	}
+	headers.Set("x-amz-acl", acl)
+	req := &client.Request{
+		Method:  "PUT",
+		Bucket:  name,
+		Path:    "/",
+		Params:  params,
+		Headers: headers,
+	}
+	_, _, err := s.c.Query(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//DeleteBucket 删除bucket
+func (s *SCS) DeleteBucket(name string) error {
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	req := &client.Request{
+		Method: "DELETE",
+		Bucket: name,
+		Path:   "/",
+		Params: params,
+	}
+	_, _, err := s.c.Query(req)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //GetBucketACL 获取bucket acl

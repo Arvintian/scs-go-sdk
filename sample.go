@@ -65,6 +65,14 @@ func main() {
 	fmt.Println("test head object================")
 	fmt.Println(b.Head("testkey"))
 
+	fmt.Println("test list object=============")
+	fmt.Println(b.List("", "", "", 2))
+
+	// fmt.Println("test create bucket==========")
+	// fmt.Println(s.PutBucket("test.create", scs.ACLPrivate))
+
+	// fmt.Println("test delete bucket===========")
+	// fmt.Println(s.DeleteBucket("test.create"))
 }
 
 func readPrint(data io.ReadCloser) {

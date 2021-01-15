@@ -1,8 +1,10 @@
 package scs
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -127,4 +129,40 @@ func (b *Bucket) Delete(key string) error {
 		return err
 	}
 	return err
+}
+
+// List 获取obejct列表
+func (b *Bucket) List(delimiter, prefix, marker string, limit int64) (ListObject, error) {
+	var lo ListObject
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	if delimiter != "" {
+		params["delimiter"] = []string{delimiter}
+	}
+	if prefix != "" {
+		params["prefix"] = []string{prefix}
+	}
+	if marker != "" {
+		params["marker"] = []string{marker}
+	}
+	params["max-keys"] = []string{fmt.Sprint(limit)}
+	req := &client.Request{
+		Method: "GET",
+		Bucket: b.Name,
+		Path:   "/",
+		Params: params,
+	}
+	_, body, err := b.c.Query(req)
+	if err != nil {
+		return lo, err
+	}
+	bts, err := ioutil.ReadAll(body)
+	if err != nil {
+		return lo, err
+	}
+	//fmt.Println(string(bts))
+	if err := json.Unmarshal(bts, &lo); err != nil {
+		return lo, err
+	}
+	return lo, nil
 }
