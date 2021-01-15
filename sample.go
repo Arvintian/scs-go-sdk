@@ -61,7 +61,7 @@ func main() {
 	readPrint(rdata)
 
 	fmt.Println("test delete object==============")
-	b.Delete("testkey")
+	fmt.Println(b.Delete("testkey"))
 	fmt.Println("test head object================")
 	fmt.Println(b.Head("testkey"))
 

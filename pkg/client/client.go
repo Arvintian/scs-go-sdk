@@ -18,7 +18,7 @@ type Client struct {
 	endpoint  string
 	accesskey string
 	secretkey string
-	debug     bool
+	hc        *http.Client
 }
 
 //Request scs http request
@@ -48,6 +48,18 @@ func NewClient(accesskey, secretkey, endpoint string) *Client {
 		accesskey: accesskey,
 		secretkey: secretkey,
 		endpoint:  endpoint,
+		hc: &http.Client{
+			Transport: &http.Transport{
+				Dial: func(netw, addr string) (net.Conn, error) {
+					c, err := net.DialTimeout(netw, addr, time.Second*5) //设置建立连接超时时间
+					if err != nil {
+						return nil, err
+					}
+					//c.SetDeadline(time.Now().Add(3 * time.Second)) //设置发送接收数据超时
+					return c, nil
+				},
+			},
+		},
 	}
 }
 
@@ -123,18 +135,7 @@ func (c *Client) run(req *Request) (hresp *http.Response, err error) {
 		hreq.ContentLength, _ = strconv.ParseInt(v[0], 10, 64)
 		delete(req.Headers, "Content-Length")
 	}
-	htCli := &http.Client{
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (net.Conn, error) {
-				c, err := net.DialTimeout(netw, addr, time.Second*5) //设置建立连接超时时间
-				if err != nil {
-					return nil, err
-				}
-				//c.SetDeadline(time.Now().Add(3 * time.Second)) //设置发送接收数据超时
-				return c, nil
-			},
-		},
-	}
+	htCli := c.hc
 	if req.Body != nil {
 		hreq.Body = ioutil.NopCloser(req.Body)
 	}
