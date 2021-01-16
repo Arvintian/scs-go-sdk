@@ -1,11 +1,13 @@
 package scs
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -165,4 +167,124 @@ func (b *Bucket) List(delimiter, prefix, marker string, limit int64) (ListObject
 		return lo, err
 	}
 	return lo, nil
+}
+
+// InitiateMultipartUpload 大文件分片上传
+func (b *Bucket) InitiateMultipartUpload(key string, XAmzMeta map[string]string) (MultipartUpload, error) {
+	var mu MultipartUpload
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	params["multipart"] = []string{""}
+	var headers = make(http.Header)
+	for k, v := range XAmzMeta {
+		headers.Set(k, v)
+	}
+	req := &client.Request{
+		Method:  "POST",
+		Bucket:  b.Name,
+		Path:    fmt.Sprintf("/%s", key),
+		Params:  params,
+		Headers: headers,
+	}
+	_, body, err := b.c.Query(req)
+	if err != nil {
+		return mu, err
+	}
+	bts, err := ioutil.ReadAll(body)
+	if err != nil {
+		return mu, err
+	}
+	if err := json.Unmarshal(bts, &mu); err != nil {
+		return mu, err
+	}
+	return mu, nil
+}
+
+// UploadPart 上传分片
+func (b *Bucket) UploadPart(key string, uploadID string, partNumber int, data io.Reader) (Part, error) {
+	var p Part
+	p.PartNumber = partNumber
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	params["partNumber"] = []string{fmt.Sprint(partNumber)}
+	params["uploadId"] = []string{uploadID}
+	var headers = make(http.Header)
+	length, err := GetReaderLen(data)
+	if err != nil {
+		return p, err
+	}
+	headers.Set("Content-Length", fmt.Sprint(length))
+	putData, md5, fd, err := calcMD5(data, length)
+	if fd != nil {
+		defer func() {
+			fd.Close()
+			os.Remove(fd.Name())
+		}()
+	}
+	if err != nil {
+		return p, err
+	}
+	headers.Set("Content-MD5", md5)
+	req := &client.Request{
+		Method:  "PUT",
+		Bucket:  b.Name,
+		Path:    fmt.Sprintf("/%s", key),
+		Params:  params,
+		Headers: headers,
+		Body:    putData,
+	}
+	rspHeaders, _, err := b.c.Query(req)
+	if err != nil {
+		return p, err
+	}
+	p.Size = int(length)
+	p.ETag = rspHeaders.Get("Etag")
+	return p, nil
+}
+
+// CompleteMultipartUpload 完成分片上传
+func (b *Bucket) CompleteMultipartUpload(key, uploadID string, parts []Part) error {
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	params["uploadId"] = []string{uploadID}
+	bts, err := json.Marshal(parts)
+	if err != nil {
+		return err
+	}
+	req := &client.Request{
+		Method: "POST",
+		Bucket: b.Name,
+		Path:   fmt.Sprintf("/%s", key),
+		Params: params,
+		Body:   bytes.NewBuffer(bts),
+	}
+	_, _, err = b.c.Query(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ListParts 列出已经上传的所有分块
+func (b *Bucket) ListParts(key, uploadID string) (ListPart, error) {
+	var lp ListPart
+	var params = make(map[string][]string)
+	params["formatter"] = []string{"json"}
+	params["uploadId"] = []string{uploadID}
+	req := &client.Request{
+		Method: "GET",
+		Bucket: b.Name,
+		Path:   fmt.Sprintf("/%s", key),
+		Params: params,
+	}
+	_, body, err := b.c.Query(req)
+	if err != nil {
+		return lp, err
+	}
+	bts, err := ioutil.ReadAll(body)
+	//fmt.Println(string(bts))
+	if err := json.Unmarshal(bts, &lp); err != nil {
+		return lp, err
+	}
+	return lp, nil
 }

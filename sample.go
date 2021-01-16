@@ -73,6 +73,29 @@ func main() {
 
 	// fmt.Println("test delete bucket===========")
 	// fmt.Println(s.DeleteBucket("test.create"))
+
+	fmt.Println("test MultipartUpload======")
+	mp, err := b.InitiateMultipartUpload("testmukey", map[string]string{
+		"x-amx-meta-mu": "foo",
+	})
+	if err == nil {
+		mps := make([]scs.Part, 0)
+		for i := 1; i <= 3; i++ {
+			p, _ := b.UploadPart("testmukey", mp.UploadID, i, bytes.NewBufferString("mmmmm\n"))
+			mps = append(mps, p)
+		}
+		lps, err := b.ListParts(mp.Key, mp.UploadID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(mps)
+		fmt.Println(lps)
+		b.CompleteMultipartUpload(mp.Key, mp.UploadID, mps)
+		rdata, _ := b.Get("testmukey", 0, 0)
+		readPrint(rdata)
+	} else {
+		fmt.Println(err)
+	}
 }
 
 func readPrint(data io.ReadCloser) {

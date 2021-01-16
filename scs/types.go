@@ -53,7 +53,8 @@ type Bucket struct {
 
 // Owner type
 type Owner struct {
-	ID string `json:"ID"`
+	ID          string `json:"ID"`
+	DisplayName string `json:"DisplayName"`
 }
 
 // ObjectMeta type
@@ -92,4 +93,27 @@ type Object struct {
 	MD5          string `json:"MD5"`
 	ContentType  string `json:"ContentType"`
 	Size         int64  `json:"Size"`
+}
+
+// MultipartUpload type
+type MultipartUpload struct {
+	Bucket   string `json:"Bucket"`
+	Key      string `json:"Key"`
+	UploadID string `json:"UploadId"`
+}
+
+// Part type
+type Part struct {
+	PartNumber   int    `json:"PartNumber"`
+	LastModified string `json:"Last-Modified"`
+	ETag         string `json:"ETag"`
+	Size         int    `json:"Size"`
+}
+
+// ListPart type
+type ListPart struct {
+	Bucket string `json:"Bucket"`
+	Key    string `json:"Key"`
+	//Owner  Owner  `json:"Owner"`
+	Parts []Part `json:"Parts"`
 }
