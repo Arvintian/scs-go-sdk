@@ -100,14 +100,26 @@ func (b *Bucket) Put(key string, XAmzMeta map[string]string, data io.Reader) err
 	if err != nil {
 		return err
 	}
+	putData, md5, fd, err := calcMD5(data, length)
+	if fd != nil {
+		defer func() {
+			fd.Close()
+			os.Remove(fd.Name())
+		}()
+	}
+	if err != nil {
+		return err
+	}
+	//fmt.Println(md5)
 	headers.Set("Content-Length", fmt.Sprint(length))
+	headers.Set("Content-MD5", md5)
 	req := &client.Request{
 		Method:  "PUT",
 		Bucket:  b.Name,
 		Path:    fmt.Sprintf("/%s", key),
 		Params:  params,
 		Headers: headers,
-		Body:    data,
+		Body:    putData,
 	}
 	_, _, err = b.c.Query(req)
 	if err != nil {
