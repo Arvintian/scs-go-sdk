@@ -36,43 +36,49 @@ func main() {
 	fmt.Println("test get bucket meta========")
 	fmt.Println(s.GetBucketMeta(bucket))
 
-	fmt.Println("test list get bucket ============")
-	fmt.Println(s.ListBuckets())
+	// fmt.Println("test list get bucket ============")
+	// fmt.Println(s.ListBuckets())
 	b, _ := s.GetBucket(bucket)
-	// fmt.Println(s.PutBucket("test"))
-	// fmt.Println(s.GetBucketACL("test"))
-	// fmt.Println(s.PutBucketACL("test"))
+	// // fmt.Println(s.PutBucket("test"))
+	// // fmt.Println(s.GetBucketACL("test"))
+	// // fmt.Println(s.PutBucketACL("test"))
 
 	fmt.Println("test put==========")
-	data := bytes.NewBufferString("sssssbb")
-	fmt.Println(b.Put("testkey", map[string]string{
+	data := bytes.NewBufferString("asssssbb")
+	err = b.Put("testkey", map[string]string{
 		"x-amz-meta-test": "foo",
-	}, data))
+	}, data)
+	if err != nil {
+		fmt.Println("put error", err)
+	}
 
-	fmt.Println("test head object================")
-	fmt.Println(b.Head("testkey"))
+	// fmt.Println("test head object================")
+	// fmt.Println(b.Head("testkey"))
 
 	fmt.Println("test get object==========")
-	rdata, _ := b.Get("testkey", 0, 0)
+	rdata, err := b.Get("testkey", 0, -1)
+	if err != nil {
+		fmt.Println(err)
+	}
 	readPrint(rdata)
-	rdata, _ = b.Get("testkey", 5, 7)
-	readPrint(rdata)
-	rdata, _ = b.Get("testkey", 5, 10)
-	readPrint(rdata)
+	// rdata, _ = b.Get("testkey", 5, 7)
+	// readPrint(rdata)
+	// rdata, _ = b.Get("testkey", 5, 10)
+	// readPrint(rdata)
 
-	fmt.Println("test delete object==============")
-	fmt.Println(b.Delete("testkey"))
-	fmt.Println("test head object================")
-	fmt.Println(b.Head("testkey"))
+	// fmt.Println("test delete object==============")
+	// fmt.Println(b.Delete("testkey"))
+	// fmt.Println("test head object================")
+	// fmt.Println(b.Head("testkey"))
 
-	fmt.Println("test list object=============")
-	fmt.Println(b.List("", "", "", 2))
+	// fmt.Println("test list object=============")
+	// fmt.Println(b.List("", "", "", 2))
 
-	// fmt.Println("test create bucket==========")
-	// fmt.Println(s.PutBucket("test.create", scs.ACLPrivate))
+	// // fmt.Println("test create bucket==========")
+	// // fmt.Println(s.PutBucket("test.create", scs.ACLPrivate))
 
-	// fmt.Println("test delete bucket===========")
-	// fmt.Println(s.DeleteBucket("test.create"))
+	// // fmt.Println("test delete bucket===========")
+	// // fmt.Println(s.DeleteBucket("test.create"))
 
 	fmt.Println("test MultipartUpload======")
 	mp, err := b.InitiateMultipartUpload("testmukey", map[string]string{
@@ -81,7 +87,10 @@ func main() {
 	if err == nil {
 		mps := make([]scs.Part, 0)
 		for i := 1; i <= 3; i++ {
-			p, _ := b.UploadPart("testmukey", mp.UploadID, i, bytes.NewBufferString("mmmmm\n"))
+			p, err := b.UploadPart("testmukey", mp.UploadID, i, bytes.NewBufferString("ammmmm"))
+			if err != nil {
+				fmt.Println(err)
+			}
 			mps = append(mps, p)
 		}
 		lps, err := b.ListParts(mp.Key, mp.UploadID)
@@ -91,7 +100,7 @@ func main() {
 		fmt.Println(mps)
 		fmt.Println(lps)
 		b.CompleteMultipartUpload(mp.Key, mp.UploadID, mps)
-		rdata, _ := b.Get("testmukey", 0, 0)
+		rdata, _ := b.Get("testmukey", 0, -1)
 		readPrint(rdata)
 	} else {
 		fmt.Println(err)

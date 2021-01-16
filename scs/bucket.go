@@ -71,7 +71,7 @@ func (b *Bucket) Get(key string, start, end int64) (io.ReadCloser, error) {
 	var params = make(map[string][]string)
 	var headers = make(http.Header)
 	params["formatter"] = []string{"json"}
-	if !(start == 0 && end == 0) {
+	if !(start < 0 || end < 0) {
 		headers.Set("Range", fmt.Sprintf("bytes=%d-%d", start, end))
 	}
 	req := &client.Request{
