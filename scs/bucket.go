@@ -71,12 +71,12 @@ func (b *Bucket) Head(key string) (ObjectMeta, error) {
 }
 
 // Get 获取object
-func (b *Bucket) Get(key string, start, end int64) (io.ReadCloser, error) {
+func (b *Bucket) Get(key string, rg string) (io.ReadCloser, error) {
 	var params = make(map[string][]string)
 	var headers = make(http.Header)
 	params["formatter"] = []string{"json"}
-	if !(start < 0 || end < 0) {
-		headers.Set("Range", fmt.Sprintf("bytes=%d-%d", start, end))
+	if rg != "" {
+		headers.Set("Range", fmt.Sprintf("bytes=%s", rg))
 	}
 	req := &client.Request{
 		Method:  "GET",

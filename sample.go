@@ -56,15 +56,11 @@ func main() {
 	// fmt.Println(b.Head("testkey"))
 
 	fmt.Println("test get object==========")
-	rdata, err := b.Get("testkey", 0, -1)
+	rdata, err := b.Get("testkey", "0-0")
 	if err != nil {
 		fmt.Println(err)
 	}
 	readPrint(rdata)
-	// rdata, _ = b.Get("testkey", 5, 7)
-	// readPrint(rdata)
-	// rdata, _ = b.Get("testkey", 5, 10)
-	// readPrint(rdata)
 
 	// fmt.Println("test delete object==============")
 	// fmt.Println(b.Delete("testkey"))
@@ -100,7 +96,7 @@ func main() {
 		fmt.Println(mps)
 		fmt.Println(lps)
 		b.CompleteMultipartUpload(mp.Key, mp.UploadID, mps)
-		rdata, _ := b.Get("testmukey", 0, -1)
+		rdata, _ := b.Get("testmukey", "0-")
 		readPrint(rdata)
 	} else {
 		fmt.Println(err)
