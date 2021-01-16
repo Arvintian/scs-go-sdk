@@ -18,6 +18,10 @@ func (b *Bucket) String() string {
 	return b.Name
 }
 
+/*********************************************
+GetObject和MultipartUpload没实现数据完整性校验
+**********************************************/
+
 // Head 获取object meta
 func (b *Bucket) Head(key string) (ObjectMeta, error) {
 	var m ObjectMeta
