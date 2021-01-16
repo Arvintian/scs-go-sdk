@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
 	"os"
@@ -57,6 +58,31 @@ func calcMD5(body io.Reader, contentLen int64) (reader io.Reader, b64 string, te
 		buf, err = ioutil.ReadAll(body)
 		sum := md5.Sum(buf)
 		b64 = base64.StdEncoding.EncodeToString(sum[:])
+		reader = bytes.NewReader(buf)
+	}
+	return
+}
+
+func calcCRC32(body io.Reader, contentLen int64) (reader io.Reader, crc string, tempFile *os.File, err error) {
+	if contentLen == 0 || contentLen > MD5Threshold {
+		// Huge body, use temporary file
+		tempFile, err = ioutil.TempFile(os.TempDir(), TempFilePrefix)
+		if tempFile != nil {
+			io.Copy(tempFile, body)
+			tempFile.Seek(0, os.SEEK_SET)
+			mycrc32 := crc32.NewIEEE()
+			io.Copy(mycrc32, tempFile)
+			crc = strings.ToUpper(fmt.Sprintf("%x", mycrc32.Sum32()))
+			tempFile.Seek(0, os.SEEK_SET)
+			reader = tempFile
+		}
+	} else {
+		// Small body, use memory
+		var buf []byte
+		buf, err = ioutil.ReadAll(body)
+		mycrc32 := crc32.NewIEEE()
+		mycrc32.Write(buf)
+		crc = strings.ToUpper(fmt.Sprintf("%x", mycrc32.Sum32()))
 		reader = bytes.NewReader(buf)
 	}
 	return
