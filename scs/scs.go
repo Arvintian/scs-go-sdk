@@ -28,6 +28,7 @@ func (s *SCS) ListBuckets() ([]Bucket, error) {
 		Params: params,
 	}
 	_, rc, err := s.c.Query(req)
+	defer rc.Close()
 	if err != nil {
 		return bs.Buckets, err
 	}
@@ -74,6 +75,7 @@ func (s *SCS) GetBucketMeta(name string) (BucketMeta, error) {
 		Params: params,
 	}
 	_, rc, err := s.c.Query(req)
+	defer rc.Close()
 	if err != nil {
 		return meta, err
 	}
@@ -103,7 +105,8 @@ func (s *SCS) PutBucket(name string, acl string) error {
 		Params:  params,
 		Headers: headers,
 	}
-	_, _, err := s.c.Query(req)
+	_, body, err := s.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return err
 	}
@@ -120,7 +123,8 @@ func (s *SCS) DeleteBucket(name string) error {
 		Path:   "/",
 		Params: params,
 	}
-	_, _, err := s.c.Query(req)
+	_, body, err := s.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -67,11 +68,11 @@ func NewClient(accesskey, secretkey, endpoint string) *Client {
 func (c *Client) Query(req *Request) (http.Header, io.ReadCloser, error) {
 	err := c.prepare(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, ioutil.NopCloser(bytes.NewBuffer([]byte{})), err
 	}
 	hresp, err := c.run(req)
 	if err != nil || hresp == nil {
-		return nil, nil, err
+		return nil, ioutil.NopCloser(bytes.NewBuffer([]byte{})), err
 	}
 	return hresp.Header, hresp.Body, nil
 }

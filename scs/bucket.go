@@ -33,7 +33,8 @@ func (b *Bucket) Head(key string) (ObjectMeta, error) {
 		Path:   fmt.Sprintf("/%s", key),
 		Params: params,
 	}
-	header, _, err := b.c.Query(req)
+	header, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return m, err
 	}
@@ -125,7 +126,8 @@ func (b *Bucket) Put(key string, XAmzMeta map[string]string, data io.Reader) err
 		Headers: headers,
 		Body:    putData,
 	}
-	_, _, err = b.c.Query(req)
+	_, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return err
 	}
@@ -142,7 +144,8 @@ func (b *Bucket) Delete(key string) error {
 		Path:   fmt.Sprintf("/%s", key),
 		Params: params,
 	}
-	_, _, err := b.c.Query(req)
+	_, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return err
 	}
@@ -171,6 +174,7 @@ func (b *Bucket) List(delimiter, prefix, marker string, limit int64) (ListObject
 		Params: params,
 	}
 	_, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return lo, err
 	}
@@ -203,6 +207,7 @@ func (b *Bucket) InitiateMultipartUpload(key string, XAmzMeta map[string]string)
 		Headers: headers,
 	}
 	_, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return mu, err
 	}
@@ -249,7 +254,8 @@ func (b *Bucket) UploadPart(key string, uploadID string, partNumber int, data io
 		Headers: headers,
 		Body:    putData,
 	}
-	rspHeaders, _, err := b.c.Query(req)
+	rspHeaders, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return p, err
 	}
@@ -274,7 +280,8 @@ func (b *Bucket) CompleteMultipartUpload(key, uploadID string, parts []Part) err
 		Params: params,
 		Body:   bytes.NewBuffer(bts),
 	}
-	_, _, err = b.c.Query(req)
+	_, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return err
 	}
@@ -294,6 +301,7 @@ func (b *Bucket) ListParts(key, uploadID string) (ListPart, error) {
 		Params: params,
 	}
 	_, body, err := b.c.Query(req)
+	defer body.Close()
 	if err != nil {
 		return lp, err
 	}
