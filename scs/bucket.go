@@ -79,6 +79,7 @@ func (b *Bucket) Get(key string, rg string) (io.ReadCloser, error) {
 	if rg != "" {
 		headers.Set("Range", fmt.Sprintf("bytes=%s", rg))
 	}
+	headers.Set("Accept-Encoding", "identity")
 	req := &client.Request{
 		Method:  "GET",
 		Bucket:  b.Name,

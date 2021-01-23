@@ -43,8 +43,34 @@ var sigleParams = map[string]bool{
 	"relax":     true,
 }
 
+// HTTPTimeout defines HTTP timeout.
+type HTTPTimeout struct {
+	ConnectTimeout   time.Duration
+	ReadWriteTimeout time.Duration
+	HeaderTimeout    time.Duration
+	LongTimeout      time.Duration
+	IdleConnTimeout  time.Duration
+}
+
+// HTTPMaxConns defines max idle connections and max idle connections per host
+type HTTPMaxConns struct {
+	MaxIdleConns        int
+	MaxIdleConnsPerHost int
+}
+
 //NewClient return a client point
 func NewClient(accesskey, secretkey, endpoint string) *Client {
+
+	httpTimeOut := HTTPTimeout{}
+	httpTimeOut.ConnectTimeout = time.Second * 30   // 30s
+	httpTimeOut.ReadWriteTimeout = time.Second * 60 // 60s
+	httpTimeOut.HeaderTimeout = time.Second * 60    // 60s
+	httpTimeOut.LongTimeout = time.Second * 300     // 300s
+	httpTimeOut.IdleConnTimeout = time.Second * 50  // 50s
+	httpMaxConns := HTTPMaxConns{}
+	httpMaxConns.MaxIdleConns = 100
+	httpMaxConns.MaxIdleConnsPerHost = 100
+
 	return &Client{
 		accesskey: accesskey,
 		secretkey: secretkey,
@@ -52,13 +78,20 @@ func NewClient(accesskey, secretkey, endpoint string) *Client {
 		hc: &http.Client{
 			Transport: &http.Transport{
 				Dial: func(netw, addr string) (net.Conn, error) {
-					c, err := net.DialTimeout(netw, addr, time.Second*5) //设置建立连接超时时间
+					d := net.Dialer{
+						Timeout:   httpTimeOut.ConnectTimeout,
+						KeepAlive: 30 * time.Second,
+					}
+					conn, err := d.Dial(netw, addr)
 					if err != nil {
 						return nil, err
 					}
-					//c.SetDeadline(time.Now().Add(3 * time.Second)) //设置发送接收数据超时
-					return c, nil
+					return newTimeoutConn(conn, httpTimeOut.ReadWriteTimeout, httpTimeOut.LongTimeout), nil
 				},
+				MaxIdleConns:          httpMaxConns.MaxIdleConns,
+				MaxIdleConnsPerHost:   httpMaxConns.MaxIdleConnsPerHost,
+				IdleConnTimeout:       httpTimeOut.IdleConnTimeout,
+				ResponseHeaderTimeout: httpTimeOut.HeaderTimeout,
 			},
 		},
 	}
@@ -122,6 +155,8 @@ func (c *Client) prepare(req *Request) error {
 }
 
 func (c *Client) run(req *Request) (hresp *http.Response, err error) {
+	// fmt.Println(req.Headers)
+	// fmt.Println(req.urlencode())
 	u, err := req.urlencode()
 	if err != nil {
 		return nil, err
@@ -130,7 +165,7 @@ func (c *Client) run(req *Request) (hresp *http.Response, err error) {
 		URL:    u,
 		Method: req.Method,
 		Header: req.Headers,
-		Close:  true,
+		//Close:  true,
 	}
 	if v, ok := req.Headers["Content-Length"]; ok {
 		hreq.ContentLength, _ = strconv.ParseInt(v[0], 10, 64)
