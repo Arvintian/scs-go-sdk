@@ -136,9 +136,9 @@ func (c *Client) prepare(req *Request) error {
 			if strings.IndexAny(req.Bucket, "/:@") >= 0 {
 				return fmt.Errorf("bad S3 bucket: %q", req.Bucket)
 			}
-			req.signpath = "/" + req.Bucket + (&url.URL{Path: req.Path}).RequestURI()
+			req.signpath = "/" + urlquote(req.Bucket) + (&url.URL{Path: urlquote(req.Path), Opaque: urlquote(req.Path)}).RequestURI()
 		} else {
-			req.signpath = (&url.URL{Path: req.Path}).RequestURI()
+			req.signpath = (&url.URL{Path: urlquote(req.Path), Opaque: urlquote(req.Path)}).RequestURI()
 		}
 		req.baseuri = c.endpoint
 		req.baseuri = strings.Replace(req.baseuri, "$", req.Bucket, -1)
@@ -209,11 +209,23 @@ func (req *Request) urlencode() (*url.URL, error) {
 	}
 	re := regexp.MustCompile(req.Bucket)
 	if re.MatchString(u.Host) {
-		u.Path = req.Path
+		u.Path = urlquote(req.Path)
 	} else {
-		u.Path = "/" + req.Bucket + req.Path
+		u.Path = "/" + urlquote(req.Bucket) + urlquote(req.Path)
 	}
+	// force golang's http client not call EscapedPath
+	u.Opaque = u.Path
 	return u, nil
+}
+
+//https://scs.sinacloud.com/doc/scs/guide#limitations
+//https://github.com/SinaCloudStorage/SinaStorage-SDK-Python/blob/2192dc3cb76fb792986242bf7b65e24bda5333b8/sinastorage/utils.py#L135
+func urlquote(u string) string {
+	v := make([]string, 0)
+	for _, s := range strings.Split(u, "/") {
+		v = append(v, url.QueryEscape(s))
+	}
+	return strings.Join(v, "/")
 }
 
 //Error scs client error
